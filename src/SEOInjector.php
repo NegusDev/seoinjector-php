@@ -142,7 +142,7 @@ class SEOInjector
 
         // Fetch from API
         try {
-            $apiUrl = $this->apiUrl . '/meta/' . urlencode($this->apiKey) . '/url/' . urlencode($url);
+            $apiUrl = $this->apiUrl . '/meta/' . urlencode($this->apiKey) . '?url=' . urlencode($url);
             
             $context = stream_context_create([
                 'http' => [
