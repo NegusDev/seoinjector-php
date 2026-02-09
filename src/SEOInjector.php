@@ -1,4 +1,5 @@
 <?php
+
 /**
  * SEO Injector - Universal PHP Library
  * Works with Laravel, WordPress, Symfony, or any PHP project
@@ -107,12 +108,12 @@ class SEOInjector
     {
         // Try to get from server variables
         $url = $_SERVER['REQUEST_URI'] ?? '/';
-        
+
         // Remove query string
         if (($pos = strpos($url, '?')) !== false) {
             $url = substr($url, 0, $pos);
         }
-        
+
         return $url;
     }
 
@@ -143,7 +144,7 @@ class SEOInjector
         // Fetch from API
         try {
             $apiUrl = $this->apiUrl . '/meta/' . urlencode($this->apiKey) . '?url=' . urlencode($url);
-            
+
             $context = stream_context_create([
                 'http' => [
                     'method' => 'GET',
@@ -174,7 +175,7 @@ class SEOInjector
             if ($this->cache) {
                 $this->setCachedData($cacheKey, $data);
             }
-            
+
             $this->cacheStore[$cacheKey] = $data;
 
             return $data;
@@ -213,30 +214,39 @@ class SEOInjector
 
             // Handle meta tags with name attribute
             if (isset($tag['name']) && isset($tag['content'])) {
-                $html .= '<meta name="' . htmlspecialchars($tag['name'], ENT_QUOTES, 'UTF-8') . 
-                        '" content="' . htmlspecialchars($tag['content'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
+                $html .= '<meta name="' . htmlspecialchars($tag['name'], ENT_QUOTES, 'UTF-8') .
+                    '" content="' . htmlspecialchars($tag['content'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
                 continue;
             }
 
             // Handle meta tags with property attribute (Open Graph)
             if (isset($tag['property']) && isset($tag['content'])) {
-                $html .= '<meta property="' . htmlspecialchars($tag['property'], ENT_QUOTES, 'UTF-8') . 
-                        '" content="' . htmlspecialchars($tag['content'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
+                $html .= '<meta property="' . htmlspecialchars($tag['property'], ENT_QUOTES, 'UTF-8') .
+                    '" content="' . htmlspecialchars($tag['content'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
                 continue;
             }
 
             // Handle link tags (canonical, etc.)
             if (isset($tag['rel']) && isset($tag['href'])) {
-                $html .= '<link rel="' . htmlspecialchars($tag['rel'], ENT_QUOTES, 'UTF-8') . 
-                        '" href="' . htmlspecialchars($tag['href'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
+                $html .= '<link rel="' . htmlspecialchars($tag['rel'], ENT_QUOTES, 'UTF-8') .
+                    '" href="' . htmlspecialchars($tag['href'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
+                continue;
+            }
+        }
+
+        // Handle link tags (canonical, etc.)
+        if (isset($data['hreflangTags'])) {
+            foreach ($data['hreflangTags'] as $tag) {
+                $html .= '<link hreflang="' . htmlspecialchars($tag['hreflang'] ?? '', ENT_QUOTES, 'UTF-8') . '" rel="' . htmlspecialchars($tag['rel'], ENT_QUOTES, 'UTF-8') .
+                    '" href="' . htmlspecialchars($tag['href'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
                 continue;
             }
         }
 
         // Add JSON-LD schema if present
         if (isset($data['schemaJson'])) {
-            $schema = is_string($data['schemaJson']) 
-                ? $data['schemaJson'] 
+            $schema = is_string($data['schemaJson'])
+                ? $data['schemaJson']
                 : json_encode($data['schemaJson']);
             $html .= '<script type="application/ld+json">' . $schema . '</script>' . "\n";
         }
@@ -256,6 +266,7 @@ class SEOInjector
     {
         $metaTags = $data['metaTags'] ?? [];
         $result = [];
+        $hreflangTags = $data['hreflangTags'] ?? [];
 
         foreach ($metaTags as $tag) {
             if (!is_array($tag)) {
@@ -277,6 +288,26 @@ class SEOInjector
             if (isset($tag['property'])) {
                 $key = str_replace(':', '_', $tag['property']);
                 $result[$key] = $tag['content'];
+            }
+        }
+
+        foreach ($hreflangTags as $tag) {
+            if (!is_array($tag)) {
+                continue;
+            }
+            if (isset($tag['href'])) {
+                if (isset($tag['hreflang'])) {
+                    // Hreflang links
+                    $result['hreflang_' . $tag['hreflang']] = [
+                        "rel" => $tag['rel'] ?? 'alternate',
+                        "hreflang" => $tag['hreflang'],
+                        "href" => $tag["href"],
+                    ];
+                } else {
+                    // Regular links (canonical, etc.) without hreflang
+                    $rel = $tag['rel'] ?? 'link';
+                    $result[$rel] = $tag['href'];
+                }
             }
         }
 
@@ -327,7 +358,7 @@ class SEOInjector
     private function setCachedData(string $key, array $data): void
     {
         $cacheDir = sys_get_temp_dir() . '/seoinjector';
-        
+
         if (!is_dir($cacheDir)) {
             @mkdir($cacheDir, 0755, true);
         }
@@ -344,14 +375,14 @@ class SEOInjector
     public function clearCache(string $url): void
     {
         $cacheKey = "seoinjector_{$this->apiKey}_{$url}";
-        
+
         // Clear in-memory cache
         unset($this->cacheStore[$cacheKey]);
-        
+
         // Clear file cache
         $cacheDir = sys_get_temp_dir() . '/seoinjector';
         $cacheFile = $cacheDir . '/' . md5($cacheKey) . '.cache';
-        
+
         if (file_exists($cacheFile)) {
             @unlink($cacheFile);
         }
@@ -364,10 +395,10 @@ class SEOInjector
     {
         // Clear in-memory cache
         $this->cacheStore = [];
-        
+
         // Clear file cache directory
         $cacheDir = sys_get_temp_dir() . '/seoinjector';
-        
+
         if (is_dir($cacheDir)) {
             $files = glob($cacheDir . '/*.cache');
             foreach ($files as $file) {
@@ -376,5 +407,3 @@ class SEOInjector
         }
     }
 }
-
-

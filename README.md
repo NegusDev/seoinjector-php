@@ -20,7 +20,7 @@ Universal PHP library for managing SEO metadata from a centralized dashboard. Wo
 
 ## 📦 Installation
 ```bash
-composer require seoinjector/php
+composer require negusdev/seoinjector-php
 ```
 
 ## 🚀 Quick Start
