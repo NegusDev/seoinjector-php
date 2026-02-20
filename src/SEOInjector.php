@@ -3,10 +3,10 @@
 /**
  * SEO Injector - Universal PHP Library
  * Works with Laravel, WordPress, Symfony, or any PHP project
- * 
+ *
  * @package SEOInjector
  * @version 1.0.0
- * @author SEO Injector
+ * @author  SEO Injector
  * @license MIT
  */
 
@@ -20,14 +20,18 @@ class SEOInjector
     private bool $cache;
     private int $cacheDuration;
     private bool $debug;
-    private array $cacheStore = [];
+    /**
+     * Summary of get
+     *
+     * @param string $key
+     */
 
+    private ?string $language = null;
     /**
      * Initialize SEO Injector
-     * 
-     * @param string $apiKey Your SEO Injector API key
-     * @param array $options Configuration options
-     * 
+     *
+     * @param string $apiKey  Your SEO Injector API key
+     * @param array  $options Configuration options
      * @example
      * $seo = new SEOInjector('your_api_key', [
      *     'cache' => true,
@@ -40,15 +44,14 @@ class SEOInjector
         $this->apiUrl = $options['api_url'] ?? 'https://api.seoinjector.com/api';
         $this->cache = $options['cache'] ?? true;
         $this->cacheDuration = $options['cache_duration'] ?? 3600;
-        $this->debug = $options['debug'] ?? true;
+        $this->debug = $options['debug'] ?? false;
     }
 
     /**
      * Set the URL to fetch metadata for
-     * 
-     * @param string $url Page URL or path
-     * @return self
-     * 
+     *
+     * @param   string $url Page URL or path
+     * @return  self
      * @example
      * $seo->setUrl('/about')->render();
      */
@@ -58,11 +61,17 @@ class SEOInjector
         return $this;
     }
 
+    public function setLanguage(string $language): self
+    {
+        $this->language = $language;
+        return $this;
+    }
+
+
     /**
      * Render meta tags as HTML
-     * 
-     * @return string HTML meta tags
-     * 
+     *
+     * @return  string HTML meta tags
      * @example
      * echo $seo->render();
      */
@@ -80,9 +89,8 @@ class SEOInjector
 
     /**
      * Get metadata as array
-     * 
-     * @return array|null Metadata array or null if not found
-     * 
+     *
+     * @return  array|null Metadata array or null if not found
      * @example
      * $metadata = $seo->get();
      * $title = $metadata['title'] ?? 'Default Title';
@@ -101,7 +109,7 @@ class SEOInjector
 
     /**
      * Get current page URL from server variables
-     * 
+     *
      * @return string Current URL path
      */
     private function getCurrentUrl(): string
@@ -119,13 +127,17 @@ class SEOInjector
 
     /**
      * Fetch metadata from API with caching
-     * 
-     * @param string $url Page URL or path
+     *
+     * @param  string $url Page URL or path
      * @return array|null API response or null
      */
     private function fetchMetadata(string $url): ?array
     {
-        $cacheKey = "seoinjector_{$this->apiKey}_{$url}";
+        $lang = $this->language
+            ?? $this->detectLanguage()
+            ?? 'en';
+
+        $cacheKey = "seoinjector_{$this->apiKey}_{$url}_{$lang}";
 
         // Check in-memory cache first
         if (isset($this->cacheStore[$cacheKey])) {
@@ -145,13 +157,25 @@ class SEOInjector
         try {
             $apiUrl = $this->apiUrl . '/meta/' . urlencode($this->apiKey) . '?url=' . urlencode($url);
 
-            $context = stream_context_create([
-                'http' => [
-                    'method' => 'GET',
-                    'header' => "Accept: application/json\r\n",
-                    'timeout' => 5,
-                ],
-            ]);
+            $language = $this->language
+                ?? $this->detectLanguage()
+                ?? 'en';
+
+            $headers = "Accept: application/json\r\n";
+            $headers .= "Accept-Language: {$language}\r\n";
+
+            $headers .= "X-SEO-Cache: " . ($this->cache ? '1' : '0') . "\r\n";
+            $headers .= "X-SEO-Cache-TTL: {$this->cacheDuration}\r\n";
+
+            $context = stream_context_create(
+                [
+                    'http' => [
+                        'method' => 'GET',
+                        'header' => $headers,
+                        'timeout' => 5,
+                    ],
+                ]
+            );
 
             $response = @file_get_contents($apiUrl, false, $context);
 
@@ -189,8 +213,7 @@ class SEOInjector
 
     /**
      * Convert API response to HTML meta tags
-     * 
-     * @param array $data API response
+     * @param  array $data API response
      * @return string HTML meta tags
      */
     private function convertToHtml(array $data): string
@@ -198,7 +221,6 @@ class SEOInjector
         if (!isset($data['metaTags']) || !is_array($data['metaTags'])) {
             return '';
         }
-
         $html = "\n<!-- SEO Injector -->\n";
 
         foreach ($data['metaTags'] as $tag) {
@@ -237,7 +259,8 @@ class SEOInjector
         // Handle link tags (canonical, etc.)
         if (isset($data['hreflangTags'])) {
             foreach ($data['hreflangTags'] as $tag) {
-                $html .= '<link hreflang="' . htmlspecialchars($tag['hreflang'] ?? '', ENT_QUOTES, 'UTF-8') . '" rel="' . htmlspecialchars($tag['rel'], ENT_QUOTES, 'UTF-8') .
+                $html .= '<link hreflang="' . htmlspecialchars($tag['hreflang'] ?? '', ENT_QUOTES, 'UTF-8') . '" 
+                rel="' . htmlspecialchars($tag['rel'], ENT_QUOTES, 'UTF-8') .
                     '" href="' . htmlspecialchars($tag['href'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
                 continue;
             }
@@ -258,8 +281,7 @@ class SEOInjector
 
     /**
      * Convert API response to associative array
-     * 
-     * @param array $data API response
+     * @param  array $data API response
      * @return array Metadata as key-value pairs
      */
     private function convertToArray(array $data): array
@@ -321,8 +343,7 @@ class SEOInjector
 
     /**
      * Get cached data from file system
-     * 
-     * @param string $key Cache key
+     * @param  string $key Cache key
      * @return array|null Cached data or null
      */
     private function getCachedData(string $key): ?array
@@ -351,9 +372,8 @@ class SEOInjector
 
     /**
      * Save data to file system cache
-     * 
-     * @param string $key Cache key
-     * @param array $data Data to cache
+     * @param string $key  Cache key
+     * @param array  $data Data to cache
      */
     private function setCachedData(string $key, array $data): void
     {
@@ -369,12 +389,12 @@ class SEOInjector
 
     /**
      * Clear cached metadata for a specific URL
-     * 
      * @param string $url Page URL or path
      */
     public function clearCache(string $url): void
     {
-        $cacheKey = "seoinjector_{$this->apiKey}_{$url}";
+        $lang = $language ?? $this->language ?? $this->detectLanguage() ?? 'en';
+        $cacheKey = "seoinjector_{$this->apiKey}_{$url}_{$lang}";
 
         // Clear in-memory cache
         unset($this->cacheStore[$cacheKey]);
@@ -405,5 +425,36 @@ class SEOInjector
                 @unlink($file);
             }
         }
+    }
+
+    private function detectLanguage(): ?string
+    {
+        if (!isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+            return null;
+        }
+
+        $header = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
+
+        // Split by comma (priority order)
+        $parts = explode(',', $header);
+
+        if (empty($parts[0])) {
+            return null;
+        }
+
+        // Remove optional ;q= value
+        $primary = explode(';', $parts[0])[0];
+
+        return trim($primary);
+    }
+
+    protected function __testSetCachedData(string $key, array $data): void
+    {
+        $this->setCachedData($key, $data);
+    }
+
+    protected function __testGetCachedData(string $key): ?array
+    {
+        return $this->getCachedData($key);
     }
 }

@@ -5,7 +5,9 @@
 [![License](https://img.shields.io/packagist/l/seoinjector/php.svg)](https://packagist.org/packages/seoinjector/php)
 [![PHP Version](https://img.shields.io/packagist/php-v/seoinjector/php.svg)](https://packagist.org/packages/seoinjector/php)
 
-Universal PHP library for managing SEO metadata from a centralized dashboard. Works with **Laravel, WordPress, Symfony, CodeIgniter, or any PHP project**.
+Universal PHP library for managing SEO metadata from a centralized
+dashboard. Works with **Laravel, WordPress, Symfony, CodeIgniter, or
+any PHP project**.
 
 ## ✨ Features
 
@@ -19,6 +21,7 @@ Universal PHP library for managing SEO metadata from a centralized dashboard. Wo
 - 📖 Comprehensive documentation
 
 ## 📦 Installation
+
 ```bash
 composer require negusdev/seoinjector-php
 ```
@@ -26,6 +29,7 @@ composer require negusdev/seoinjector-php
 ## 🚀 Quick Start
 
 ### Vanilla PHP
+
 ```php
 <?php
 require 'vendor/autoload.php';
@@ -46,12 +50,14 @@ $seo = new SEOInjector('your_api_key');
 ```
 
 ### Laravel
+
 ```php
 // In your blade template
 {!! app('seoinjector')->render() !!}
 ```
 
 ### WordPress
+
 ```php
 // In functions.php or plugin file
 add_action('wp_head', function() {
@@ -68,6 +74,7 @@ add_action('wp_head', function() {
 - [API Reference](https://docs.seoinjector.com/php/api)
 
 ## 🧪 Testing
+
 ```bash
 composer test
 ```

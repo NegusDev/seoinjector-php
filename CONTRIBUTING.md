@@ -3,6 +3,7 @@
 Thanks for considering contributing to SEO Injector PHP!
 
 ## Development Setup
+
 ```bash
 git clone https://github.com/negusdev/seoinjector-php.git
 cd php
@@ -10,6 +11,7 @@ composer install
 ```
 
 ## Running Tests
+
 ```bash
 composer test
 ```
@@ -17,6 +19,7 @@ composer test
 ## Code Style
 
 We follow PSR-12 coding standards.
+
 ```bash
 composer format
 ```
