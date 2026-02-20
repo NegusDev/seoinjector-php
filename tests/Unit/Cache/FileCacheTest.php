@@ -2,55 +2,55 @@
 
 namespace SEOInjector\Tests\Unit;
 
-use SEOInjector\SEOInjector;
 use PHPUnit\Framework\TestCase;
+use SEOInjector\SEOInjector;
 
 class FileCacheTest extends TestCase
 {
+    private SEOInjector $seo;
     private string $apiKey = 'test-api-key';
     private string $cacheDir;
 
     protected function setUp(): void
     {
         parent::setUp();
-        // Ensure temp cache directory is clean
-        $this->cacheDir = sys_get_temp_dir() . '/seoinjector';
-        if (is_dir($this->cacheDir)) {
-            array_map('unlink', glob($this->cacheDir . '/*.cache'));
-        } else {
-            mkdir($this->cacheDir, 0755, true);
-        }
+        $this->seo = new SEOInjector('TEST_API_KEY', [
+            'cache' => true,
+            'cache_duration' => 1, // short TTL for testing
+            'debug' => false,
+        ]);
     }
 
-    protected function tearDown(): void
+    private function setCachedData(string $key, array $data): void
     {
-        // Clean up cache after each test
-        if (is_dir($this->cacheDir)) {
-            array_map('unlink', glob($this->cacheDir . '/*.cache'));
-        }
-        parent::tearDown();
+        $setter = \Closure::bind(function($k, $d) {
+            $this->setCachedData($k, $d);
+        }, $this->seo, SEOInjector::class);
+
+        $setter($key, $data);
+    }
+
+    private function getCachedData(string $key): ?array
+    {
+        $getter = \Closure::bind(function($k) {
+            return $this->getCachedData($k);
+        }, $this->seo, SEOInjector::class);
+
+        return $getter($key);
     }
 
     public function testCacheSaveAndRetrieve(): void
     {
-        $seo = new SEOInjector($this->apiKey, ['cache' => true, 'cache_duration' => 3600, 'debug' => true]);
+        $key = 'test_cache_key';
+        $data = ['title' => 'Hello World'];
 
-        $url = '/test-page';
-        $data = ['metaTags' => [['name' => 'title', 'content' => 'Test Title']]];
+        $this->setCachedData($key, $data);
+        $cached = $this->getCachedData($key);
 
-        // Access private setCachedData via reflection
-        $reflection = new \ReflectionClass($seo);
-        $method = $reflection->getMethod('setCachedData');
-        $method->invoke($seo, "seoinjector_{$this->apiKey}_{$url}_en", $data);
-
-        $getMethod = $reflection->getMethod('getCachedData');
-        $cached = $getMethod->invoke($seo, "seoinjector_{$this->apiKey}_{$url}_en");
-
-        $this->assertNotNull($cached, 'Cache should exist');
-        $this->assertEquals($data, $cached, 'Cached data should match original data');
+        $this->assertSame($data, $cached, 'Cache should return the same data.');
     }
 
-    public function testClearCache(): void
+ public function testClearCache(): void
     {
         $seo = new SEOInjector($this->apiKey, ['cache' => true]);
 
@@ -72,39 +72,40 @@ class FileCacheTest extends TestCase
 
     public function testClearAllCache(): void
     {
-        $seo = new SEOInjector($this->apiKey, ['cache' => true]);
+        $key1 = 'key1';
+        $key2 = 'key2';
+        $data = ['title' => 'Some data'];
 
-        // Save multiple cache entries
-        $reflection = new \ReflectionClass($seo);
-        $setMethod = $reflection->getMethod('setCachedData');
+        $this->setCachedData($key1, $data);
+        $this->setCachedData($key2, $data);
 
-        $setMethod->invoke($seo, "seoinjector_{$this->apiKey}_page1_en", ['metaTags' => [['name' => 'title', 'content' => 'Page1']]]);
-        $setMethod->invoke($seo, "seoinjector_{$this->apiKey}_page2_en", ['metaTags' => [['name' => 'title', 'content' => 'Page2']]]);
+        $this->seo->clearAllCache();
 
-        $seo->clearAllCache();
-
-        $getMethod = $reflection->getMethod('getCachedData');
-
-        $this->assertNull($getMethod->invoke($seo, "seoinjector_{$this->apiKey}_page1_en"));
-        $this->assertNull($getMethod->invoke($seo, "seoinjector_{$this->apiKey}_page2_en"));
+        $this->assertNull($this->getCachedData($key1), 'All cache should be cleared.');
+        $this->assertNull($this->getCachedData($key2), 'All cache should be cleared.');
     }
 
     public function testLanguageSpecificCache(): void
     {
-        $seo = new SEOInjector($this->apiKey, ['cache' => true]);
-        $seo->setLanguage('fr-CA');
+        $url = '/test-url';
+        $keyEn = "seoinjector_TEST_API_KEY_{$url}_en";
+        $keyFr = "seoinjector_TEST_API_KEY_{$url}_fr";
 
-        $url = '/lang-test';
-        $data = ['metaTags' => [['name' => 'title', 'content' => 'Bonjour']]];
+        $dataEn = ['title' => 'Hello'];
+        $dataFr = ['title' => 'Bonjour'];
 
-        $reflection = new \ReflectionClass($seo);
-        $setMethod = $reflection->getMethod('setCachedData');
-        $setMethod->invoke($seo, "seoinjector_{$this->apiKey}_{$url}_fr-CA", $data);
+        // Set English cache
+        $this->seo->setLanguage('en');
+        $this->setCachedData($keyEn, $dataEn);
 
-        $getMethod = $reflection->getMethod('getCachedData');
-        $cached = $getMethod->invoke($seo, "seoinjector_{$this->apiKey}_{$url}_fr-CA");
+        // Set French cache
+        $this->seo->setLanguage('fr');
+        $this->setCachedData($keyFr, $dataFr);
 
-        $this->assertNotNull($cached);
-        $this->assertEquals($data, $cached);
+        $this->seo->setLanguage('en');
+        $this->assertSame($dataEn, $this->getCachedData($keyEn));
+
+        $this->seo->setLanguage('fr');
+        $this->assertSame($dataFr, $this->getCachedData($keyFr));
     }
 }

@@ -170,11 +170,11 @@ class SEOInjector
 
             $context = stream_context_create(
                 [
-                'http' => [
-                    'method' => 'GET',
-                    'header' => $headers,
-                    'timeout' => 5,
-                ],
+                    'http' => [
+                        'method' => 'GET',
+                        'header' => $headers,
+                        'timeout' => 5,
+                    ],
                 ]
             );
 
@@ -399,8 +399,8 @@ class SEOInjector
      */
     public function clearCache(string $url): void
     {
-    $lang = $language ?? $this->language ?? $this->detectLanguage() ?? 'en';
-    $cacheKey = "seoinjector_{$this->apiKey}_{$url}_{$lang}";
+        $lang = $language ?? $this->language ?? $this->detectLanguage() ?? 'en';
+        $cacheKey = "seoinjector_{$this->apiKey}_{$url}_{$lang}";
 
         // Clear in-memory cache
         unset($this->cacheStore[$cacheKey]);
@@ -452,5 +452,15 @@ class SEOInjector
         $primary = explode(';', $parts[0])[0];
 
         return trim($primary);
+    }
+
+    protected function _testSetCachedData(string $key, array $data): void
+    {
+        $this->setCachedData($key, $data);
+    }
+
+    protected function _testGetCachedData(string $key): ?array
+    {
+        return $this->getCachedData($key);
     }
 }
