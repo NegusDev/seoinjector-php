@@ -5,7 +5,9 @@
 [![License](https://img.shields.io/packagist/l/seoinjector/php.svg)](https://packagist.org/packages/seoinjector/php)
 [![PHP Version](https://img.shields.io/packagist/php-v/seoinjector/php.svg)](https://packagist.org/packages/seoinjector/php)
 
-Universal PHP library for managing SEO metadata from a centralized dashboard. Works with **Laravel, WordPress, Symfony, CodeIgniter, or any PHP project**.
+Universal PHP library for managing SEO metadata from a centralized
+dashboard. Works with **Laravel, WordPress, Symfony, CodeIgniter, or
+any PHP project**.
 
 ## ✨ Features
 
