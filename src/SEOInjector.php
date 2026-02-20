@@ -22,6 +22,8 @@ class SEOInjector
     private bool $debug;
     private array $cacheStore = [];
 
+    private ?string $language = null;
+
     /**
      * Initialize SEO Injector
      * 
@@ -40,7 +42,7 @@ class SEOInjector
         $this->apiUrl = $options['api_url'] ?? 'https://api.seoinjector.com/api';
         $this->cache = $options['cache'] ?? true;
         $this->cacheDuration = $options['cache_duration'] ?? 3600;
-        $this->debug = $options['debug'] ?? true;
+        $this->debug = $options['debug'] ?? false;
     }
 
     /**
@@ -57,6 +59,13 @@ class SEOInjector
         $this->url = $url;
         return $this;
     }
+
+    public function setLanguage(string $language): self
+    {
+        $this->language = $language;
+        return $this;
+    }
+
 
     /**
      * Render meta tags as HTML
@@ -125,7 +134,11 @@ class SEOInjector
      */
     private function fetchMetadata(string $url): ?array
     {
-        $cacheKey = "seoinjector_{$this->apiKey}_{$url}";
+        $lang = $this->language
+            ?? $this->detectLanguage()
+            ?? 'en';
+
+        $cacheKey = "seoinjector_{$this->apiKey}_{$url}_{$lang}";
 
         // Check in-memory cache first
         if (isset($this->cacheStore[$cacheKey])) {
@@ -145,10 +158,20 @@ class SEOInjector
         try {
             $apiUrl = $this->apiUrl . '/meta/' . urlencode($this->apiKey) . '?url=' . urlencode($url);
 
+            $language = $this->language
+                ?? $this->detectLanguage()
+                ?? 'en';
+
+            $headers = "Accept: application/json\r\n";
+            $headers .= "Accept-Language: {$language}\r\n";
+
+            $headers .= "X-SEO-Cache: " . ($this->cache ? '1' : '0') . "\r\n";
+            $headers .= "X-SEO-Cache-TTL: {$this->cacheDuration}\r\n";
+
             $context = stream_context_create([
                 'http' => [
                     'method' => 'GET',
-                    'header' => "Accept: application/json\r\n",
+                    'header' => $headers,
                     'timeout' => 5,
                 ],
             ]);
@@ -405,5 +428,26 @@ class SEOInjector
                 @unlink($file);
             }
         }
+    }
+
+    private function detectLanguage(): ?string
+    {
+        if (!isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+            return null;
+        }
+
+        $header = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
+
+        // Split by comma (priority order)
+        $parts = explode(',', $header);
+
+        if (empty($parts[0])) {
+            return null;
+        }
+
+        // Remove optional ;q= value
+        $primary = explode(';', $parts[0])[0];
+
+        return trim($primary);
     }
 }

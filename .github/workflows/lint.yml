@@ -1,0 +1,54 @@
+name: Lint
+
+on:
+  pull_request:
+    branches: [ dev, negus ]
+
+jobs:
+  php-cs-fixer:
+    runs-on: ubuntu-latest
+    name: PHP CS Fixer
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          tools: php-cs-fixer
+      
+      - name: Run PHP CS Fixer
+        run: php-cs-fixer fix --dry-run --diff --verbose
+
+  markdown-lint:
+    runs-on: ubuntu-latest
+    name: Markdown Lint
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Lint markdown files
+        uses: avto-dev/markdown-lint@v1
+        with:
+          args: '**/*.md'
+          ignore: 'vendor'
+
+  composer-validate:
+    runs-on: ubuntu-latest
+    name: Validate composer.json
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.3
+          tools: composer:v2
+      
+      - name: Validate composer.json and composer.lock
+        run: composer validate --strict --no-check-publish

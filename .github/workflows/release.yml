@@ -1,0 +1,61 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    name: Create Release
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Get version from tag
+        id: tag
+        run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
+      
+      - name: Extract changelog for this version
+        id: changelog
+        run: |
+          CHANGELOG=$(sed -n "/## \[${{ steps.tag.outputs.VERSION }}\]/,/## \[/p" CHANGELOG.md | sed '1d;$d')
+          echo "CHANGELOG<<EOF" >> $GITHUB_OUTPUT
+          echo "$CHANGELOG" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+      
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Release v${{ steps.tag.outputs.VERSION }}
+          body: ${{ steps.changelog.outputs.CHANGELOG }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
+  
+  packagist:
+    runs-on: ubuntu-latest
+    name: Update Packagist
+    needs: release
+    
+    steps:
+      - name: Trigger Packagist update
+        run: |
+          curl -XPOST -H'content-type:application/json' \
+            'https://packagist.org/api/update-package?username=${{ secrets.PACKAGIST_USERNAME }}&apiToken=${{ secrets.PACKAGIST_TOKEN }}' \
+            -d'{"repository":{"url":"https://packagist.org/packages/negusdev/seoinjector-php"}}'
+      
+      - name: Wait for Packagist indexing
+        run: sleep 30
+      
+      - name: Verify package updated
+        run: |
+          VERSION="${GITHUB_REF#refs/tags/v}"
+          LATEST=$(curl -s https://packagist.org/packages/negusdev/seoinjector-php.json | jq -r '.package.versions | keys | .[0]')
+          echo "Latest version on Packagist: $LATEST"
+          echo "Released version: v$VERSION"

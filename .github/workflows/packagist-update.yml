@@ -1,0 +1,17 @@
+name: Update Packagist
+
+on:
+  push:
+    branches: [ dev ]
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    name: Ping Packagist
+    
+    steps:
+      - name: Update Packagist
+        run: |
+          curl -XPOST -H'content-type:application/json' \
+            'https://packagist.org/api/update-package?username=${{ secrets.PACKAGIST_USERNAME }}&apiToken=${{ secrets.PACKAGIST_TOKEN }}' \
+            -d'{"repository":{"url":"https://packagist.org/packages/negusdev/seoinjector-php"}}'
