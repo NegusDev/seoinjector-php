@@ -399,7 +399,8 @@ class SEOInjector
      */
     public function clearCache(string $url): void
     {
-        $cacheKey = "seoinjector_{$this->apiKey}_{$url}";
+    $lang = $language ?? $this->language ?? $this->detectLanguage() ?? 'en';
+    $cacheKey = "seoinjector_{$this->apiKey}_{$url}_{$lang}";
 
         // Clear in-memory cache
         unset($this->cacheStore[$cacheKey]);
