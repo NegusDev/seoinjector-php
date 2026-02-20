@@ -6,7 +6,7 @@
  * 
  * @package SEOInjector
  * @version 1.0.0
- * @author SEO Injector
+ * @author  SEO Injector
  * @license MIT
  */
 
@@ -27,8 +27,8 @@ class SEOInjector
     /**
      * Initialize SEO Injector
      * 
-     * @param string $apiKey Your SEO Injector API key
-     * @param array $options Configuration options
+     * @param string $apiKey  Your SEO Injector API key
+     * @param array  $options Configuration options
      * 
      * @example
      * $seo = new SEOInjector('your_api_key', [
@@ -48,7 +48,7 @@ class SEOInjector
     /**
      * Set the URL to fetch metadata for
      * 
-     * @param string $url Page URL or path
+     * @param  string $url Page URL or path
      * @return self
      * 
      * @example
@@ -129,7 +129,7 @@ class SEOInjector
     /**
      * Fetch metadata from API with caching
      * 
-     * @param string $url Page URL or path
+     * @param  string $url Page URL or path
      * @return array|null API response or null
      */
     private function fetchMetadata(string $url): ?array
@@ -168,13 +168,15 @@ class SEOInjector
             $headers .= "X-SEO-Cache: " . ($this->cache ? '1' : '0') . "\r\n";
             $headers .= "X-SEO-Cache-TTL: {$this->cacheDuration}\r\n";
 
-            $context = stream_context_create([
+            $context = stream_context_create(
+                [
                 'http' => [
                     'method' => 'GET',
                     'header' => $headers,
                     'timeout' => 5,
                 ],
-            ]);
+                ]
+            );
 
             $response = @file_get_contents($apiUrl, false, $context);
 
@@ -213,7 +215,7 @@ class SEOInjector
     /**
      * Convert API response to HTML meta tags
      * 
-     * @param array $data API response
+     * @param  array $data API response
      * @return string HTML meta tags
      */
     private function convertToHtml(array $data): string
@@ -282,7 +284,7 @@ class SEOInjector
     /**
      * Convert API response to associative array
      * 
-     * @param array $data API response
+     * @param  array $data API response
      * @return array Metadata as key-value pairs
      */
     private function convertToArray(array $data): array
@@ -345,7 +347,7 @@ class SEOInjector
     /**
      * Get cached data from file system
      * 
-     * @param string $key Cache key
+     * @param  string $key Cache key
      * @return array|null Cached data or null
      */
     private function getCachedData(string $key): ?array
@@ -375,8 +377,8 @@ class SEOInjector
     /**
      * Save data to file system cache
      * 
-     * @param string $key Cache key
-     * @param array $data Data to cache
+     * @param string $key  Cache key
+     * @param array  $data Data to cache
      */
     private function setCachedData(string $key, array $data): void
     {

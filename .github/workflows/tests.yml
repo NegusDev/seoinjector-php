@@ -86,4 +86,4 @@ jobs:
         run: composer format -- --dry-run
       
       - name: Static analysis (PHPStan)
-        run: composer analyse
+        run: composer lint

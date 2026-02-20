@@ -43,12 +43,13 @@
     "scripts": {
         "test": "phpunit",
         "test-coverage": "phpunit --coverage-html coverage",
-        "analyse": "phpstan analyse src --level=8",
-        "format": "phpcbf src tests",
+       "analyse": "phpstan analyse src tests --level=max",
+       "format": "phpcbf src tests",
         "check": [
             "@analyse",
             "@test"
-        ]
+        ],
+        "lint": "phpcs src tests"
     },
     "config": {
         "sort-packages": true,

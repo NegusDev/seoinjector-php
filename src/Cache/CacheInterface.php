@@ -7,7 +7,7 @@ interface CacheInterface
     /**
      * Get cached data
      *
-     * @param string $key Cache key
+     * @param  string $key Cache key
      * @return array|null Cached data or null if not found/expired
      */
     public function get(string $key): ?array;
@@ -15,9 +15,9 @@ interface CacheInterface
     /**
      * Set cached data
      *
-     * @param string $key Cache key
-     * @param array $data Data to cache
-     * @param int $duration Cache duration in seconds
+     * @param  string $key      Cache key
+     * @param  array  $data     Data to cache
+     * @param  int    $duration Cache duration in seconds
      * @return void
      */
     public function set(string $key, array $data, int $duration): void;
@@ -25,7 +25,7 @@ interface CacheInterface
     /**
      * Clear specific cache entry
      *
-     * @param string $key Cache key
+     * @param  string $key Cache key
      * @return void
      */
     public function clear(string $key): void;
