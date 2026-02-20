@@ -8,8 +8,6 @@ use SEOInjector\SEOInjector;
 class FileCacheTest extends TestCase
 {
     private SEOInjector $seo;
-    private string $apiKey = 'test-api-key';
-    private string $cacheDir;
 
     protected function setUp(): void
     {
@@ -50,24 +48,18 @@ class FileCacheTest extends TestCase
         $this->assertSame($data, $cached, 'Cache should return the same data.');
     }
 
- public function testClearCache(): void
+    public function testClearCache(): void
     {
-        $seo = new SEOInjector($this->apiKey, ['cache' => true]);
+        $key = 'test_clear_cache';
+        $data = ['title' => 'To be cleared'];
 
-        $url = '/clear-test';
-        $data = ['metaTags' => [['name' => 'title', 'content' => 'Clear Test']]];
+        $this->setCachedData($key, $data);
 
-        $reflection = new \ReflectionClass($seo);
-        $setMethod = $reflection->getMethod('setCachedData');
-        $setMethod->invoke($seo, "seoinjector_{$this->apiKey}_{$url}_en", $data);
+        // Clear cache using public method
+        $this->seo->clearCache($key);
 
-        // Clear cache
-        $seo->clearCache($url);
-
-        $getMethod = $reflection->getMethod('getCachedData');
-        $cached = $getMethod->invoke($seo, "seoinjector_{$this->apiKey}_{$url}_en");
-
-        $this->assertNull($cached, 'Cache should be cleared and return null');
+        $cached = $this->getCachedData($key);
+        $this->assertNull($cached, 'Cache should be cleared and return null.');
     }
 
     public function testClearAllCache(): void
