@@ -18,7 +18,8 @@ class SEOInjectorServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(
-            'seoinjector', function ($app) {
+            'seoinjector', 
+            function ($app) {
                 $apiKey = config('services.seoinjector.api_key') 
                    ?? env('SEO_INJECTOR_KEY');
 
@@ -39,7 +40,8 @@ class SEOInjectorServiceProvider extends ServiceProvider
         $this->publishes(
             [
             __DIR__ . '/config/seoinjector.php' => $this->app->configPath('seoinjector.php'),
-            ], 'config'
+            ], 
+            'config'
         );
     }
 }

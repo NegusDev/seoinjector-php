@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<ruleset name="SEOInjector Rules">
+    <description>Custom rules for SEOInjector</description>
+
+    <!-- Include PSR12 standard -->
+    <rule ref="PSR12">
+        <!-- Exclude missing file doc comment -->
+        <exclude name="Squiz.Commenting.FileComment.Missing"/>
+        <!-- Exclude missing interface doc comment -->
+        <exclude name="Squiz.Commenting.ClassComment.Missing"/>
+        <!-- Exclude grouped @return tag issues -->
+        <exclude name="Squiz.Commenting.FunctionComment.InvalidReturn"/>
+    </rule>
+</ruleset>

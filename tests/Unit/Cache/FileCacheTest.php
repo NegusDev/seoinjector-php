@@ -13,11 +13,13 @@ class FileCacheTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->seo = new SEOInjector($this->apiKey, [
+        $this->seo = new SEOInjector(
+            $this->apiKey, [
             'cache' => true,
             'cache_duration' => 3600,
             'debug' => false,
-        ]);
+            ]
+        );
     }
 
     private function callPrivateMethod(object $obj, string $method, array $args = [])

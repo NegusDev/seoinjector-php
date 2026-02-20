@@ -3,7 +3,7 @@
 /**
  * SEO Injector - Universal PHP Library
  * Works with Laravel, WordPress, Symfony, or any PHP project
- * 
+ *
  * @package SEOInjector
  * @version 1.0.0
  * @author  SEO Injector
@@ -20,16 +20,18 @@ class SEOInjector
     private bool $cache;
     private int $cacheDuration;
     private bool $debug;
-    private array $cacheStore = [];
+    /**
+     * Summary of get
+     *
+     * @param string $key
+     */
 
     private ?string $language = null;
-
     /**
      * Initialize SEO Injector
-     * 
+     *
      * @param string $apiKey  Your SEO Injector API key
      * @param array  $options Configuration options
-     * 
      * @example
      * $seo = new SEOInjector('your_api_key', [
      *     'cache' => true,
@@ -47,10 +49,9 @@ class SEOInjector
 
     /**
      * Set the URL to fetch metadata for
-     * 
-     * @param  string $url Page URL or path
-     * @return self
-     * 
+     *
+     * @param   string $url Page URL or path
+     * @return  self
      * @example
      * $seo->setUrl('/about')->render();
      */
@@ -69,9 +70,8 @@ class SEOInjector
 
     /**
      * Render meta tags as HTML
-     * 
-     * @return string HTML meta tags
-     * 
+     *
+     * @return  string HTML meta tags
      * @example
      * echo $seo->render();
      */
@@ -89,9 +89,8 @@ class SEOInjector
 
     /**
      * Get metadata as array
-     * 
-     * @return array|null Metadata array or null if not found
-     * 
+     *
+     * @return  array|null Metadata array or null if not found
      * @example
      * $metadata = $seo->get();
      * $title = $metadata['title'] ?? 'Default Title';
@@ -110,7 +109,7 @@ class SEOInjector
 
     /**
      * Get current page URL from server variables
-     * 
+     *
      * @return string Current URL path
      */
     private function getCurrentUrl(): string
@@ -128,7 +127,7 @@ class SEOInjector
 
     /**
      * Fetch metadata from API with caching
-     * 
+     *
      * @param  string $url Page URL or path
      * @return array|null API response or null
      */
@@ -214,7 +213,6 @@ class SEOInjector
 
     /**
      * Convert API response to HTML meta tags
-     * 
      * @param  array $data API response
      * @return string HTML meta tags
      */
@@ -223,7 +221,6 @@ class SEOInjector
         if (!isset($data['metaTags']) || !is_array($data['metaTags'])) {
             return '';
         }
-
         $html = "\n<!-- SEO Injector -->\n";
 
         foreach ($data['metaTags'] as $tag) {
@@ -262,7 +259,8 @@ class SEOInjector
         // Handle link tags (canonical, etc.)
         if (isset($data['hreflangTags'])) {
             foreach ($data['hreflangTags'] as $tag) {
-                $html .= '<link hreflang="' . htmlspecialchars($tag['hreflang'] ?? '', ENT_QUOTES, 'UTF-8') . '" rel="' . htmlspecialchars($tag['rel'], ENT_QUOTES, 'UTF-8') .
+                $html .= '<link hreflang="' . htmlspecialchars($tag['hreflang'] ?? '', ENT_QUOTES, 'UTF-8') . '" 
+                rel="' . htmlspecialchars($tag['rel'], ENT_QUOTES, 'UTF-8') .
                     '" href="' . htmlspecialchars($tag['href'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
                 continue;
             }
@@ -283,7 +281,6 @@ class SEOInjector
 
     /**
      * Convert API response to associative array
-     * 
      * @param  array $data API response
      * @return array Metadata as key-value pairs
      */
@@ -346,7 +343,6 @@ class SEOInjector
 
     /**
      * Get cached data from file system
-     * 
      * @param  string $key Cache key
      * @return array|null Cached data or null
      */
@@ -376,7 +372,6 @@ class SEOInjector
 
     /**
      * Save data to file system cache
-     * 
      * @param string $key  Cache key
      * @param array  $data Data to cache
      */
@@ -394,7 +389,6 @@ class SEOInjector
 
     /**
      * Clear cached metadata for a specific URL
-     * 
      * @param string $url Page URL or path
      */
     public function clearCache(string $url): void
@@ -454,12 +448,12 @@ class SEOInjector
         return trim($primary);
     }
 
-    protected function _testSetCachedData(string $key, array $data): void
+    protected function __testSetCachedData(string $key, array $data): void
     {
         $this->setCachedData($key, $data);
     }
 
-    protected function _testGetCachedData(string $key): ?array
+    protected function __testGetCachedData(string $key): ?array
     {
         return $this->getCachedData($key);
     }
