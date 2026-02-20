@@ -83,7 +83,7 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
       
       - name: Check code style (PHP_CodeSniffer)
-        run: composer format -- --dry-run
+        run: composer lint
       
       - name: Static analysis (PHPStan)
-        run: composer lint
+        run: composer analyse
