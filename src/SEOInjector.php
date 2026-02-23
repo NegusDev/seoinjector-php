@@ -14,6 +14,12 @@ namespace SEOInjector;
 
 class SEOInjector
 {
+	/**
+     * Internal cache storage
+     *
+     * @var array<string, mixed>
+     */
+    private array $cacheStore = [];
     private string $apiKey;
     private string $apiUrl;
     private ?string $url = null;
