@@ -165,19 +165,56 @@ class SEOInjector
 
             $language = $this->language
                 ?? $this->detectLanguage()
-                ?? 'en';
+		?? 'en';
 
-            $headers = "Accept: application/json\r\n";
-            $headers .= "Accept-Language: {$language}\r\n";
+	    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36';
 
-            $headers .= "X-SEO-Cache: " . ($this->cache ? '1' : '0') . "\r\n";
-            $headers .= "X-SEO-Cache-TTL: {$this->cacheDuration}\r\n";
+		$referer = $_SERVER['HTTP_REFERER'] ?? null;
+
+	    $headers = [
+    'Accept: application/json',
+    "Accept-Language: {$language}",
+    "User-Agent: {$userAgent}",
+    'Connection: close',
+    'DNT: 1',
+    'Upgrade-Insecure-Requests: 1',
+    'X-SEO-Cache: ' . ($this->cache ? '1' : '0'),
+    "X-SEO-Cache-TTL: {$this->cacheDuration}",
+];
+
+	    if ($referer !== null) {
+		$headers[] = "Referer: {$referer}";
+	    }
+
+	    if (!empty($_SERVER['HTTP_ACCEPT_ENCODING'])) {
+    $headers[] = 'Accept-Encoding: ' . $_SERVER['HTTP_ACCEPT_ENCODING'];
+}
+
+if (!empty($_SERVER['HTTP_SEC_CH_UA'])) {
+    $headers[] = 'Sec-CH-UA: ' . $_SERVER['HTTP_SEC_CH_UA'];
+}
+
+if (!empty($_SERVER['HTTP_SEC_CH_UA_MOBILE'])) {
+    $headers[] = 'Sec-CH-UA-Mobile: ' . $_SERVER['HTTP_SEC_CH_UA_MOBILE'];
+}
+
+if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
+    $headers[] = 'Sec-CH-UA-Platform: ' . $_SERVER['HTTP_SEC_CH_UA_PLATFORM'];
+}
+
+
+
+            //$headers = "Accept: application/json\r\n";
+            //$headers .= "Accept-Language: {$language}\r\n";
+
+            //$headers .= "X-SEO-Cache: " . ($this->cache ? '1' : '0') . "\r\n";
+            //$headers .= "X-SEO-Cache-TTL: {$this->cacheDuration}\r\n";
 
             $context = stream_context_create(
                 [
                     'http' => [
-                        'method' => 'GET',
-                        'header' => $headers,
+			    'method' => 'GET',
+			    'header' => implode("\r\n", $headers),
                         'timeout' => 5,
                     ],
                 ]
