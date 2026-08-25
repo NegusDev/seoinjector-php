@@ -6,7 +6,8 @@
 
 ```bash
 composer require negusdev/seoinjector-php
-````
+
+```
 
 ### Step 2: Create a Config File
 
@@ -19,12 +20,13 @@ return [
     'api_key' => env('SEOINJECTOR_API_KEY'),
     'api_url' => env(
         'SEOINJECTOR_API_URL',
-        'https://api.seoinjector.com/api'
+        '[https://api.seoinjector.com/api](https://api.seoinjector.com/api)'
     ),
     'cache' => env('SEOINJECTOR_CACHE', true),
     'cache_duration' => env('SEOINJECTOR_CACHE_DURATION', 3600),
     'debug' => env('SEOINJECTOR_DEBUG', false),
 ];
+
 ```
 
 ### Step 3: Create a Service Provider
@@ -64,6 +66,7 @@ class SEOInjectorServiceProvider extends ServiceProvider
         //
     }
 }
+
 ```
 
 Add to `config/app.php` in the `providers` array:
@@ -75,6 +78,7 @@ Add to `config/app.php` in the `providers` array:
     // ...
     App\Providers\SEOInjectorServiceProvider::class,
 ],
+
 ```
 
 ### Step 4: Add Environment Variables
@@ -86,6 +90,7 @@ SEOINJECTOR_API_KEY=your_api_key_here
 SEOINJECTOR_CACHE=true
 SEOINJECTOR_CACHE_DURATION=3600
 SEOINJECTOR_DEBUG=false
+
 ```
 
 ---
@@ -134,6 +139,7 @@ class Product extends Model
         return $this->reviews()->avg('rating') ?? 0;
     }
 }
+
 ```
 
 #### Controller: `app/Http/Controllers/ProductController.php`
@@ -150,7 +156,7 @@ class ProductController extends Controller
 {
     public function show(string $slug): View
     {
-        $product = Product::where('slug', $slug)
+        $product = Product::where('slug',$slug)
             ->firstOrFail();
 
         // Get SEO Injector instance
@@ -168,9 +174,10 @@ class ProductController extends Controller
         ]);
     }
 }
+
 ```
 
-#### Blade Template:
+#### Blade Template
 
 `resources/views/products/show.blade.php`
 
@@ -214,6 +221,7 @@ class ProductController extends Controller
     </div>
 </body>
 </html>
+
 ```
 
 ---
@@ -264,6 +272,7 @@ class Article extends Model
         ];
     }
 }
+
 ```
 
 #### Controller: `app/Http/Controllers/ArticleController.php`
@@ -280,7 +289,7 @@ class ArticleController extends Controller
 {
     public function show(string $slug): View
     {
-        $article = Article::where('slug', $slug)
+        $article = Article::where('slug',$slug)
             ->published()
             ->firstOrFail();
 
@@ -295,9 +304,10 @@ class ArticleController extends Controller
         );
     }
 }
+
 ```
 
-#### Blade Template:
+#### Blade Template (Articles)
 
 `resources/views/articles/show.blade.php`
 
@@ -349,6 +359,7 @@ class ArticleController extends Controller
     </article>
 </body>
 </html>
+
 ```
 
 ---
@@ -388,6 +399,7 @@ class User extends Authenticatable
         ];
     }
 }
+
 ```
 
 #### Controller: `app/Http/Controllers/ProfileController.php`
@@ -404,7 +416,7 @@ class ProfileController extends Controller
 {
     public function show(string $username): View
     {
-        $user = User::where('username', $username)
+        $user = User::where('username',$username)
             ->firstOrFail();
 
         $seo = app('seoinjector')
@@ -412,7 +424,7 @@ class ProfileController extends Controller
             ->setContext($user->getSeoContext())
             ->setLanguage(app()->getLocale());
 
-        $articles = $user->articles()
+        $articles =$user->articles()
             ->published()
             ->latest()
             ->paginate(10);
@@ -423,6 +435,7 @@ class ProfileController extends Controller
         );
     }
 }
+
 ```
 
 ---
@@ -463,6 +476,7 @@ class InjectSEO
         return $response;
     }
 }
+
 ```
 
 Register in `app/Http/Kernel.php`:
@@ -474,6 +488,7 @@ protected $routeMiddleware = [
     // ...
     'inject-seo' => \App\Http\Middleware\InjectSEO::class,
 ];
+
 ```
 
 Use in routes:
@@ -487,6 +502,7 @@ Route::get(
 )
     ->middleware('inject-seo')
     ->name('products.show');
+
 ```
 
 Then in your controller, just set the context:
@@ -496,7 +512,7 @@ Then in your controller, just set the context:
 
 public function show(string $slug): View
 {
-    $product = Product::where('slug', $slug)
+    $product = Product::where('slug',$slug)
         ->firstOrFail();
 
     // Context is set, middleware handles URL and language
@@ -508,6 +524,7 @@ public function show(string $slug): View
         compact('product')
     );
 }
+
 ```
 
 ---
@@ -528,7 +545,7 @@ class ProductApiController extends Controller
 {
     public function show(string $slug): JsonResponse
     {
-        $product = Product::where('slug', $slug)
+        $product = Product::where('slug',$slug)
             ->firstOrFail();
 
         $seo = app('seoinjector')
@@ -536,7 +553,7 @@ class ProductApiController extends Controller
             ->setContext($product->getSeoContext());
 
         // Get metadata as array instead of HTML
-        $metadata = $seo->getDynamic();
+        $metadata =$seo->getDynamic();
 
         return response()->json([
             'product' => $product,
@@ -544,6 +561,7 @@ class ProductApiController extends Controller
         ]);
     }
 }
+
 ```
 
 Frontend (Vue/React) can use this data:
@@ -563,6 +581,7 @@ async function loadProduct(slug) {
 
   return data;
 }
+
 ```
 
 ---
@@ -578,7 +597,7 @@ use App\Models\Product;
 
 class ProductController extends Controller
 {
-    public function show(string $locale, string $slug)
+    public function show(string $locale, string$slug)
     {
         // Validate locale
         if (!in_array(
@@ -588,7 +607,7 @@ class ProductController extends Controller
             abort(404);
         }
 
-        $product = Product::where('slug', $slug)
+        $product = Product::where('slug',$slug)
             ->firstOrFail();
 
         $seo = app('seoinjector')
@@ -602,6 +621,7 @@ class ProductController extends Controller
         );
     }
 }
+
 ```
 
 Route:
@@ -615,6 +635,7 @@ Route::group(['prefix' => '{locale}'], function () {
         ->where('locale', 'en|fr|de|es')
         ->name('products.show');
 });
+
 ```
 
 ---
@@ -647,6 +668,7 @@ Route::post(
         ]);
     }
 )->middleware('auth', 'admin');
+
 ```
 
 ---
@@ -670,16 +692,15 @@ class ProductSeoTest extends TestCase
             'slug' => 'iphone-16-pro',
         ]);
 
-        $response = $this->get(
+        $response =$this->get(
             route('products.show', $product->slug)
         );
 
-        $response->assertSuccessful();
-        $response->assertSee('iPhone 16 Pro');
-        $response->assertSee('og:image');
-        $response->assertSee('og:price:amount');
+        $response->assertSuccessful();$response->assertSee('iPhone 16 Pro');
+        $response->assertSee('og:image');$response->assertSee('og:price:amount');
     }
 }
+
 ```
 
 ---
@@ -697,6 +718,3 @@ The Laravel integration provides:
 * Multi-language support with explicit language setting
 * Cache management endpoints for admin panels
 * Testable architecture with proper separation of concerns
-
-```
-```
