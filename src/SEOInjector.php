@@ -14,7 +14,7 @@ namespace SEOInjector;
 
 class SEOInjector
 {
-	/**
+    /**
      * Internal cache storage
      *
      * @var array<string, mixed>
@@ -33,6 +33,15 @@ class SEOInjector
      */
 
     private ?string $language = null;
+
+    /**
+     * context supplied by the application for dynamic SEO resolution
+     *
+     * @var array<string, mixed>
+     */
+
+    private array $dynamicContext = [];
+
     /**
      * Initialize SEO Injector
      *
@@ -47,10 +56,11 @@ class SEOInjector
     public function __construct(string $apiKey, array $options = [])
     {
         $this->apiKey = $apiKey;
-        $this->apiUrl = $options['api_url'] ?? 'https://api.seoinjector.com/api';
-        $this->cache = $options['cache'] ?? true;
-        $this->cacheDuration = $options['cache_duration'] ?? 3600;
-        $this->debug = $options['debug'] ?? false;
+        $this->apiUrl =
+            $options["api_url"] ?? "https://api.seoinjector.com/api";
+        $this->cache = $options["cache"] ?? true;
+        $this->cacheDuration = $options["cache_duration"] ?? 3600;
+        $this->debug = $options["debug"] ?? false;
     }
 
     /**
@@ -73,7 +83,6 @@ class SEOInjector
         return $this;
     }
 
-
     /**
      * Render meta tags as HTML
      *
@@ -87,7 +96,25 @@ class SEOInjector
         $metadata = $this->fetchMetadata($url);
 
         if (!$metadata) {
-            return '';
+            return "";
+        }
+
+        return $this->convertToHtml($metadata);
+    }
+
+    /**
+     * Render dynamic SEO meta tags as HTML.
+     *
+     * @return string HTML meta tags
+     */
+    public function renderDynamic(): string
+    {
+        $url = $this->url ?? $this->getCurrentUrl();
+
+        $metadata = $this->fetchDynamicMetadata($url, $this->dynamicContext);
+
+        if (!$metadata) {
+            return "";
         }
 
         return $this->convertToHtml($metadata);
@@ -106,7 +133,50 @@ class SEOInjector
         $url = $this->url ?? $this->getCurrentUrl();
         $metadata = $this->fetchMetadata($url);
 
-        if (!$metadata || !isset($metadata['metaTags'])) {
+        if (!$metadata || !isset($metadata["metaTags"])) {
+            return null;
+        }
+
+        return $this->convertToArray($metadata);
+    }
+
+    /**
+     * Set context for dynamic URL resolution.
+     *
+     * The context contains application data that SEO Injector
+     * can use when resolving dynamic SEO templates.
+     *
+     * @param array<string, mixed> $context
+     * @return self
+     *
+     * @example
+     * $seo->setContext([
+     *     'product' => [
+     *         'name' => $product->name,
+     *         'description' => $product->description,
+     *         'image' => $product->image,
+     *     ],
+     * ]);
+     */
+    public function setContext(array $context): self
+    {
+        $this->dynamicContext = $context;
+
+        return $this;
+    }
+
+    /**
+     * Get dynamically resolved SEO metadata as an array.
+     *
+     * @return array|null
+     */
+    public function getDynamic(): ?array
+    {
+        $url = $this->url ?? $this->getCurrentUrl();
+
+        $metadata = $this->fetchDynamicMetadata($url, $this->dynamicContext);
+
+        if (!$metadata) {
             return null;
         }
 
@@ -121,10 +191,10 @@ class SEOInjector
     private function getCurrentUrl(): string
     {
         // Try to get from server variables
-        $url = $_SERVER['REQUEST_URI'] ?? '/';
+        $url = $_SERVER["REQUEST_URI"] ?? "/";
 
         // Remove query string
-        if (($pos = strpos($url, '?')) !== false) {
+        if (($pos = strpos($url, "?")) !== false) {
             $url = substr($url, 0, $pos);
         }
 
@@ -139,9 +209,7 @@ class SEOInjector
      */
     private function fetchMetadata(string $url): ?array
     {
-        $lang = $this->language
-            ?? $this->detectLanguage()
-            ?? 'en';
+        $lang = $this->language ?? ($this->detectLanguage() ?? "en");
 
         $cacheKey = "seoinjector_{$this->apiKey}_{$url}_{$lang}";
 
@@ -161,48 +229,55 @@ class SEOInjector
 
         // Fetch from API
         try {
-            $apiUrl = $this->apiUrl . '/meta/' . urlencode($this->apiKey) . '?url=' . urlencode($url);
+            $apiUrl =
+                $this->apiUrl .
+                "/meta/" .
+                urlencode($this->apiKey) .
+                "?url=" .
+                urlencode($url);
 
-            $language = $this->language
-                ?? $this->detectLanguage()
-		?? 'en';
+            $language = $this->language ?? ($this->detectLanguage() ?? "en");
 
-	    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36';
+            $userAgent =
+                $_SERVER["HTTP_USER_AGENT"] ??
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36";
 
-		$referer = $_SERVER['HTTP_REFERER'] ?? null;
+            $referer = $_SERVER["HTTP_REFERER"] ?? null;
 
-	    $headers = [
-    'Accept: application/json',
-    "Accept-Language: {$language}",
-    "User-Agent: {$userAgent}",
-    'Connection: close',
-    'DNT: 1',
-    'Upgrade-Insecure-Requests: 1',
-    'X-SEO-Cache: ' . ($this->cache ? '1' : '0'),
-    "X-SEO-Cache-TTL: {$this->cacheDuration}",
-];
+            $headers = [
+                "Accept: application/json",
+                "Accept-Language: {$language}",
+                "User-Agent: {$userAgent}",
+                "Connection: close",
+                "DNT: 1",
+                "Upgrade-Insecure-Requests: 1",
+                "X-SEO-Cache: " . ($this->cache ? "1" : "0"),
+                "X-SEO-Cache-TTL: {$this->cacheDuration}",
+            ];
 
-	    if ($referer !== null) {
-		$headers[] = "Referer: {$referer}";
-	    }
+            if ($referer !== null) {
+                $headers[] = "Referer: {$referer}";
+            }
 
-	    if (!empty($_SERVER['HTTP_ACCEPT_ENCODING'])) {
-    $headers[] = 'Accept-Encoding: ' . $_SERVER['HTTP_ACCEPT_ENCODING'];
-}
+            if (!empty($_SERVER["HTTP_ACCEPT_ENCODING"])) {
+                $headers[] =
+                    "Accept-Encoding: " . $_SERVER["HTTP_ACCEPT_ENCODING"];
+            }
 
-if (!empty($_SERVER['HTTP_SEC_CH_UA'])) {
-    $headers[] = 'Sec-CH-UA: ' . $_SERVER['HTTP_SEC_CH_UA'];
-}
+            if (!empty($_SERVER["HTTP_SEC_CH_UA"])) {
+                $headers[] = "Sec-CH-UA: " . $_SERVER["HTTP_SEC_CH_UA"];
+            }
 
-if (!empty($_SERVER['HTTP_SEC_CH_UA_MOBILE'])) {
-    $headers[] = 'Sec-CH-UA-Mobile: ' . $_SERVER['HTTP_SEC_CH_UA_MOBILE'];
-}
+            if (!empty($_SERVER["HTTP_SEC_CH_UA_MOBILE"])) {
+                $headers[] =
+                    "Sec-CH-UA-Mobile: " . $_SERVER["HTTP_SEC_CH_UA_MOBILE"];
+            }
 
-if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
-    $headers[] = 'Sec-CH-UA-Platform: ' . $_SERVER['HTTP_SEC_CH_UA_PLATFORM'];
-}
-
-
+            if (!empty($_SERVER["HTTP_SEC_CH_UA_PLATFORM"])) {
+                $headers[] =
+                    "Sec-CH-UA-Platform: " .
+                    $_SERVER["HTTP_SEC_CH_UA_PLATFORM"];
+            }
 
             //$headers = "Accept: application/json\r\n";
             //$headers .= "Accept-Language: {$language}\r\n";
@@ -210,21 +285,21 @@ if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
             //$headers .= "X-SEO-Cache: " . ($this->cache ? '1' : '0') . "\r\n";
             //$headers .= "X-SEO-Cache-TTL: {$this->cacheDuration}\r\n";
 
-            $context = stream_context_create(
-                [
-                    'http' => [
-			    'method' => 'GET',
-			    'header' => implode("\r\n", $headers),
-                        'timeout' => 5,
-                    ],
-                ]
-            );
+            $context = stream_context_create([
+                "http" => [
+                    "method" => "GET",
+                    "header" => implode("\r\n", $headers),
+                    "timeout" => 5,
+                ],
+            ]);
 
             $response = @file_get_contents($apiUrl, false, $context);
 
             if ($response === false) {
                 if ($this->debug) {
-                    error_log("SEO Injector: Failed to fetch metadata for {$url}");
+                    error_log(
+                        "SEO Injector: Failed to fetch metadata for {$url}",
+                    );
                 }
                 return null;
             }
@@ -248,8 +323,162 @@ if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
             return $data;
         } catch (\Exception $e) {
             if ($this->debug) {
-                error_log('SEO Injector Error: ' . $e->getMessage());
+                error_log("SEO Injector Error: " . $e->getMessage());
             }
+            return null;
+        }
+    }
+
+    /**
+     * Fetch metadata for a dynamic URL.
+     *
+     * @param string $url
+     * @param array<string, mixed> $context
+     * @return array|null
+     */
+    protected function fetchDynamicMetadata(string $url, array $context): ?array
+    {
+        $lang = $this->language ?? ($this->detectLanguage() ?? "en");
+
+        /*
+         * Include the context in the cache key.
+         *
+         * A dynamic URL may produce different metadata
+         * depending on the supplied application context.
+         */
+        $contextHash = md5(
+            json_encode(
+                $context,
+                JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+            ),
+        );
+
+        $cacheKey = sprintf(
+            "seoinjector_dynamic_%s_%s_%s_%s",
+            $this->apiKey,
+            $url,
+            $lang,
+            $contextHash,
+        );
+
+        // In-memory cache
+        if (isset($this->cacheStore[$cacheKey])) {
+            return $this->cacheStore[$cacheKey];
+        }
+
+        // File cache
+        if ($this->cache) {
+            $cached = $this->getCachedData($cacheKey);
+
+            if ($cached !== null) {
+                $this->cacheStore[$cacheKey] = $cached;
+
+                return $cached;
+            }
+        }
+
+        try {
+            $apiUrl =
+                $this->apiUrl .
+                "/dynamic-meta/" .
+                urlencode($this->apiKey) .
+                "?url=" .
+                urlencode($url);
+
+            $language = $this->language ?? ($this->detectLanguage() ?? "en");
+
+            $userAgent = $_SERVER["HTTP_USER_AGENT"] ?? "Mozilla/5.0";
+
+            $referer = $_SERVER["HTTP_REFERER"] ?? null;
+
+            $headers = [
+                "Accept: application/json",
+                "Accept-Language: {$language}",
+                "User-Agent: {$userAgent}",
+                "Connection: close",
+                "DNT: 1",
+                "X-SEO-Cache: " . ($this->cache ? "1" : "0"),
+                "X-SEO-Cache-TTL: {$this->cacheDuration}",
+                "Content-Type: application/json",
+            ];
+
+            if ($referer !== null) {
+                $headers[] = "Referer: {$referer}";
+            }
+
+            $payload = json_encode([
+                "context" => $context,
+            ]);
+
+            if ($payload === false) {
+                if ($this->debug) {
+                    error_log("SEO Injector: Failed to encode dynamic context");
+                }
+
+                return null;
+            }
+
+            $contextOptions = [
+                "http" => [
+                    "method" => "POST",
+                    "header" => implode("\r\n", $headers),
+                    "content" => $payload,
+                    "timeout" => 5,
+                    "ignore_errors" => true,
+                ],
+            ];
+
+            $response = @file_get_contents(
+                $apiUrl,
+                false,
+                stream_context_create($contextOptions),
+            );
+
+            if ($response === false) {
+                if ($this->debug) {
+                    error_log(
+                        "SEO Injector: Failed to fetch dynamic metadata for {$url}",
+                    );
+                }
+                return null;
+            }
+
+            $data = json_decode($response, true);
+
+            if (json_last_error() !== JSON_ERROR_NONE || !is_array($data)) {
+                if ($this->debug) {
+                    error_log(
+                        "SEO Injector: Invalid dynamic metadata response for {$url}",
+                    );
+                }
+
+                return null;
+            }
+
+            /*
+             * Don't cache API error responses.
+             */
+            if (
+                isset($data["error"]) ||
+                (isset($data["status"]) &&
+                    is_int($data["status"]) &&
+                    $data["status"] >= 400)
+            ) {
+                return null;
+            }
+
+            if ($this->cache) {
+                $this->setCachedData($cacheKey, $data);
+            }
+
+            $this->cacheStore[$cacheKey] = $data;
+
+            return $data;
+        } catch (\Throwable $e) {
+            if ($this->debug) {
+                error_log("SEO Injector Dynamic Error: " . $e->getMessage());
+            }
+
             return null;
         }
     }
@@ -261,60 +490,97 @@ if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
      */
     private function convertToHtml(array $data): string
     {
-        if (!isset($data['metaTags']) || !is_array($data['metaTags'])) {
-            return '';
+        if (!isset($data["metaTags"]) || !is_array($data["metaTags"])) {
+            return "";
         }
         $html = "\n<!-- SEO Injector -->\n";
 
-        foreach ($data['metaTags'] as $tag) {
+        foreach ($data["metaTags"] as $tag) {
             if (!is_array($tag)) {
                 continue;
             }
 
             // Handle title tag
-            if (isset($tag['name']) && $tag['name'] === 'title' && isset($tag['content'])) {
-                $html .= "<title>" . htmlspecialchars($tag['content'], ENT_QUOTES, 'UTF-8') . "</title>\n";
+            if (
+                isset($tag["name"]) &&
+                $tag["name"] === "title" &&
+                isset($tag["content"])
+            ) {
+                $html .=
+                    "<title>" .
+                    htmlspecialchars($tag["content"], ENT_QUOTES, "UTF-8") .
+                    "</title>\n";
                 continue;
             }
 
             // Handle meta tags with name attribute
-            if (isset($tag['name']) && isset($tag['content'])) {
-                $html .= '<meta name="' . htmlspecialchars($tag['name'], ENT_QUOTES, 'UTF-8') .
-                    '" content="' . htmlspecialchars($tag['content'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
+            if (isset($tag["name"]) && isset($tag["content"])) {
+                $html .=
+                    '<meta name="' .
+                    htmlspecialchars($tag["name"], ENT_QUOTES, "UTF-8") .
+                    '" content="' .
+                    htmlspecialchars($tag["content"], ENT_QUOTES, "UTF-8") .
+                    '">' .
+                    "\n";
                 continue;
             }
 
             // Handle meta tags with property attribute (Open Graph)
-            if (isset($tag['property']) && isset($tag['content'])) {
-                $html .= '<meta property="' . htmlspecialchars($tag['property'], ENT_QUOTES, 'UTF-8') .
-                    '" content="' . htmlspecialchars($tag['content'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
+            if (isset($tag["property"]) && isset($tag["content"])) {
+                $html .=
+                    '<meta property="' .
+                    htmlspecialchars($tag["property"], ENT_QUOTES, "UTF-8") .
+                    '" content="' .
+                    htmlspecialchars($tag["content"], ENT_QUOTES, "UTF-8") .
+                    '">' .
+                    "\n";
                 continue;
             }
 
             // Handle link tags (canonical, etc.)
-            if (isset($tag['rel']) && isset($tag['href'])) {
-                $html .= '<link rel="' . htmlspecialchars($tag['rel'], ENT_QUOTES, 'UTF-8') .
-                    '" href="' . htmlspecialchars($tag['href'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
+            if (isset($tag["rel"]) && isset($tag["href"])) {
+                $html .=
+                    '<link rel="' .
+                    htmlspecialchars($tag["rel"], ENT_QUOTES, "UTF-8") .
+                    '" href="' .
+                    htmlspecialchars($tag["href"], ENT_QUOTES, "UTF-8") .
+                    '">' .
+                    "\n";
                 continue;
             }
         }
 
         // Handle link tags (canonical, etc.)
-        if (isset($data['hreflangTags'])) {
-            foreach ($data['hreflangTags'] as $tag) {
-                $html .= '<link hreflang="' . htmlspecialchars($tag['hreflang'] ?? '', ENT_QUOTES, 'UTF-8') . '" 
-                rel="' . htmlspecialchars($tag['rel'], ENT_QUOTES, 'UTF-8') .
-                    '" href="' . htmlspecialchars($tag['href'], ENT_QUOTES, 'UTF-8') . '">' . "\n";
+        if (isset($data["hreflangTags"])) {
+            foreach ($data["hreflangTags"] as $tag) {
+                $html .=
+                    '<link hreflang="' .
+                    htmlspecialchars(
+                        $tag["hreflang"] ?? "",
+                        ENT_QUOTES,
+                        "UTF-8",
+                    ) .
+                    '"
+                rel="' .
+                    htmlspecialchars($tag["rel"], ENT_QUOTES, "UTF-8") .
+                    '" href="' .
+                    htmlspecialchars($tag["href"], ENT_QUOTES, "UTF-8") .
+                    '">' .
+                    "\n";
                 continue;
             }
         }
 
         // Add JSON-LD schema if present
-        if (isset($data['schemaJson'])) {
-            $schema = is_string($data['schemaJson'])
-                ? $data['schemaJson']
-                : json_encode($data['schemaJson']);
-            $html .= '<script type="application/ld+json">' . $schema . '</script>' . "\n";
+        if (isset($data["schemaJson"])) {
+            $schema = is_string($data["schemaJson"])
+                ? $data["schemaJson"]
+                : json_encode($data["schemaJson"]);
+            $html .=
+                '<script type="application/ld+json">' .
+                $schema .
+                "</script>" .
+                "\n";
         }
 
         $html .= "<!-- /SEO Injector -->\n";
@@ -329,9 +595,9 @@ if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
      */
     private function convertToArray(array $data): array
     {
-        $metaTags = $data['metaTags'] ?? [];
+        $metaTags = $data["metaTags"] ?? [];
         $result = [];
-        $hreflangTags = $data['hreflangTags'] ?? [];
+        $hreflangTags = $data["hreflangTags"] ?? [];
 
         foreach ($metaTags as $tag) {
             if (!is_array($tag)) {
@@ -339,20 +605,20 @@ if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
             }
 
             // Extract title
-            if (isset($tag['name']) && $tag['name'] === 'title') {
-                $result['title'] = $tag['content'];
+            if (isset($tag["name"]) && $tag["name"] === "title") {
+                $result["title"] = $tag["content"];
                 continue;
             }
 
             // Extract other meta tags
-            if (isset($tag['name'])) {
-                $result[$tag['name']] = $tag['content'];
+            if (isset($tag["name"])) {
+                $result[$tag["name"]] = $tag["content"];
             }
 
             // Extract Open Graph tags
-            if (isset($tag['property'])) {
-                $key = str_replace(':', '_', $tag['property']);
-                $result[$key] = $tag['content'];
+            if (isset($tag["property"])) {
+                $key = str_replace(":", "_", $tag["property"]);
+                $result[$key] = $tag["content"];
             }
         }
 
@@ -360,25 +626,25 @@ if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
             if (!is_array($tag)) {
                 continue;
             }
-            if (isset($tag['href'])) {
-                if (isset($tag['hreflang'])) {
+            if (isset($tag["href"])) {
+                if (isset($tag["hreflang"])) {
                     // Hreflang links
-                    $result['hreflang_' . $tag['hreflang']] = [
-                        "rel" => $tag['rel'] ?? 'alternate',
-                        "hreflang" => $tag['hreflang'],
+                    $result["hreflang_" . $tag["hreflang"]] = [
+                        "rel" => $tag["rel"] ?? "alternate",
+                        "hreflang" => $tag["hreflang"],
                         "href" => $tag["href"],
                     ];
                 } else {
                     // Regular links (canonical, etc.) without hreflang
-                    $rel = $tag['rel'] ?? 'link';
-                    $result[$rel] = $tag['href'];
+                    $rel = $tag["rel"] ?? "link";
+                    $result[$rel] = $tag["href"];
                 }
             }
         }
 
         // Add schema if present
-        if (isset($data['schemaJson'])) {
-            $result['schema'] = $data['schemaJson'];
+        if (isset($data["schemaJson"])) {
+            $result["schema"] = $data["schemaJson"];
         }
 
         return $result;
@@ -391,8 +657,8 @@ if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
      */
     private function getCachedData(string $key): ?array
     {
-        $cacheDir = sys_get_temp_dir() . '/seoinjector';
-        $cacheFile = $cacheDir . '/' . md5($key) . '.cache';
+        $cacheDir = sys_get_temp_dir() . "/seoinjector";
+        $cacheFile = $cacheDir . "/" . md5($key) . ".cache";
 
         if (!file_exists($cacheFile)) {
             return null;
@@ -420,13 +686,13 @@ if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
      */
     private function setCachedData(string $key, array $data): void
     {
-        $cacheDir = sys_get_temp_dir() . '/seoinjector';
+        $cacheDir = sys_get_temp_dir() . "/seoinjector";
 
         if (!is_dir($cacheDir)) {
             @mkdir($cacheDir, 0755, true);
         }
 
-        $cacheFile = $cacheDir . '/' . md5($key) . '.cache';
+        $cacheFile = $cacheDir . "/" . md5($key) . ".cache";
         @file_put_contents($cacheFile, json_encode($data), LOCK_EX);
     }
 
@@ -436,15 +702,16 @@ if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
      */
     public function clearCache(string $url): void
     {
-        $lang = $language ?? $this->language ?? $this->detectLanguage() ?? 'en';
+        $lang =
+            $language ?? ($this->language ?? ($this->detectLanguage() ?? "en"));
         $cacheKey = "seoinjector_{$this->apiKey}_{$url}_{$lang}";
 
         // Clear in-memory cache
         unset($this->cacheStore[$cacheKey]);
 
         // Clear file cache
-        $cacheDir = sys_get_temp_dir() . '/seoinjector';
-        $cacheFile = $cacheDir . '/' . md5($cacheKey) . '.cache';
+        $cacheDir = sys_get_temp_dir() . "/seoinjector";
+        $cacheFile = $cacheDir . "/" . md5($cacheKey) . ".cache";
 
         if (file_exists($cacheFile)) {
             @unlink($cacheFile);
@@ -460,10 +727,10 @@ if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
         $this->cacheStore = [];
 
         // Clear file cache directory
-        $cacheDir = sys_get_temp_dir() . '/seoinjector';
+        $cacheDir = sys_get_temp_dir() . "/seoinjector";
 
         if (is_dir($cacheDir)) {
-            $files = glob($cacheDir . '/*.cache');
+            $files = glob($cacheDir . "/*.cache");
             foreach ($files as $file) {
                 @unlink($file);
             }
@@ -472,21 +739,21 @@ if (!empty($_SERVER['HTTP_SEC_CH_UA_PLATFORM'])) {
 
     private function detectLanguage(): ?string
     {
-        if (!isset($_SERVER['HTTP_ACCEPT_LANGUAGE'])) {
+        if (!isset($_SERVER["HTTP_ACCEPT_LANGUAGE"])) {
             return null;
         }
 
-        $header = $_SERVER['HTTP_ACCEPT_LANGUAGE'];
+        $header = $_SERVER["HTTP_ACCEPT_LANGUAGE"];
 
         // Split by comma (priority order)
-        $parts = explode(',', $header);
+        $parts = explode(",", $header);
 
         if (empty($parts[0])) {
             return null;
         }
 
         // Remove optional ;q= value
-        $primary = explode(';', $parts[0])[0];
+        $primary = explode(";", $parts[0])[0];
 
         return trim($primary);
     }
