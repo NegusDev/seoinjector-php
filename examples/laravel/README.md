@@ -6,7 +6,7 @@
 
 ```bash
 composer require negusdev/seoinjector-php
-```
+````
 
 ### Step 2: Create a Config File
 
@@ -17,7 +17,10 @@ Create `config/seoinjector.php`:
 
 return [
     'api_key' => env('SEOINJECTOR_API_KEY'),
-    'api_url' => env('SEOINJECTOR_API_URL', 'https://api.seoinjector.com/api'),
+    'api_url' => env(
+        'SEOINJECTOR_API_URL',
+        'https://api.seoinjector.com/api'
+    ),
     'cache' => env('SEOINJECTOR_CACHE', true),
     'cache_duration' => env('SEOINJECTOR_CACHE_DURATION', 3600),
     'debug' => env('SEOINJECTOR_DEBUG', false),
@@ -26,7 +29,8 @@ return [
 
 ### Step 3: Create a Service Provider
 
-Create `app/Providers/SEOInjectorServiceProvider.php`:
+Create
+`app/Providers/SEOInjectorServiceProvider.php`:
 
 ```php
 <?php
@@ -46,7 +50,9 @@ class SEOInjectorServiceProvider extends ServiceProvider
                 [
                     'api_url' => config('seoinjector.api_url'),
                     'cache' => config('seoinjector.cache'),
-                    'cache_duration' => config('seoinjector.cache_duration'),
+                    'cache_duration' => config(
+                        'seoinjector.cache_duration'
+                    ),
                     'debug' => config('seoinjector.debug'),
                 ]
             );
@@ -64,6 +70,7 @@ Add to `config/app.php` in the `providers` array:
 
 ```php
 <?php
+
 'providers' => [
     // ...
     App\Providers\SEOInjectorServiceProvider::class,
@@ -74,7 +81,7 @@ Add to `config/app.php` in the `providers` array:
 
 Add to `.env`:
 
-```
+```dotenv
 SEOINJECTOR_API_KEY=your_api_key_here
 SEOINJECTOR_CACHE=true
 SEOINJECTOR_CACHE_DURATION=3600
@@ -98,7 +105,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Product extends Model
 {
-    protected $fillable = ['name', 'slug', 'description', 'price', 'image', 'category_id'];
+    protected $fillable = [
+        'name',
+        'slug',
+        'description',
+        'price',
+        'image',
+        'category_id',
+    ];
 
     public function getSeoContext(): array
     {
@@ -136,7 +150,8 @@ class ProductController extends Controller
 {
     public function show(string $slug): View
     {
-        $product = Product::where('slug', $slug)->firstOrFail();
+        $product = Product::where('slug', $slug)
+            ->firstOrFail();
 
         // Get SEO Injector instance
         $seo = app('seoinjector');
@@ -155,14 +170,19 @@ class ProductController extends Controller
 }
 ```
 
-#### Blade Template: `resources/views/products/show.blade.php`
+#### Blade Template:
+
+`resources/views/products/show.blade.php`
 
 ```blade
 <!DOCTYPE html>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     {{-- Render dynamic SEO metadata --}}
     {!! $seo->renderDynamic() !!}
@@ -172,13 +192,24 @@ class ProductController extends Controller
         <h1>{{ $product->name }}</h1>
 
         <div class="product-image">
-            <img src="{{ $product->image }}" alt="{{ $product->name }}">
+            <img
+                src="{{ $product->image }}"
+                alt="{{ $product->name }}"
+            >
         </div>
 
         <div class="product-details">
-            <p class="price">${{ number_format($product->price, 2) }}</p>
-            <p class="description">{{ $product->description }}</p>
-            <button class="btn btn-primary">Add to Cart</button>
+            <p class="price">
+                ${{ number_format($product->price, 2) }}
+            </p>
+
+            <p class="description">
+                {{ $product->description }}
+            </p>
+
+            <button class="btn btn-primary">
+                Add to Cart
+            </button>
         </div>
     </div>
 </body>
@@ -200,7 +231,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class Article extends Model
 {
-    protected $fillable = ['title', 'slug', 'excerpt', 'content', 'featured_image', 'author_id', 'published_at'];
+    protected $fillable = [
+        'title',
+        'slug',
+        'excerpt',
+        'content',
+        'featured_image',
+        'author_id',
+        'published_at',
+    ];
 
     public function author()
     {
@@ -209,6 +248,8 @@ class Article extends Model
 
     public function getSeoContext(): array
     {
+        $wordCount = str_word_count($this->content);
+
         return [
             'article' => [
                 'title' => $this->title,
@@ -217,8 +258,8 @@ class Article extends Model
                 'image' => $this->featured_image,
                 'author' => $this->author->name,
                 'publishedAt' => $this->published_at?->toIso8601String(),
-                'wordCount' => str_word_count($this->content),
-                'readTime' => ceil(str_word_count($this->content) / 200), // minutes
+                'wordCount' => $wordCount,
+                'readTime' => ceil($wordCount / 200),
             ],
         ];
     }
@@ -239,26 +280,36 @@ class ArticleController extends Controller
 {
     public function show(string $slug): View
     {
-        $article = Article::where('slug', $slug)->published()->firstOrFail();
+        $article = Article::where('slug', $slug)
+            ->published()
+            ->firstOrFail();
 
         $seo = app('seoinjector')
             ->setUrl(route('articles.show', $slug))
             ->setContext($article->getSeoContext())
             ->setLanguage(app()->getLocale());
 
-        return view('articles.show', compact('article', 'seo'));
+        return view(
+            'articles.show',
+            compact('article', 'seo')
+        );
     }
 }
 ```
 
-#### Blade Template: `resources/views/articles/show.blade.php`
+#### Blade Template:
+
+`resources/views/articles/show.blade.php`
 
 ```blade
 <!DOCTYPE html>
 <html>
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
     {!! $seo->renderDynamic() !!}
 </head>
@@ -266,15 +317,30 @@ class ArticleController extends Controller
     <article class="article">
         <header class="article-header">
             <h1>{{ $article->title }}</h1>
+
             <div class="meta">
-                <span class="author">By {{ $article->author->name }}</span>
-                <span class="date">{{ $article->published_at->format('M d, Y') }}</span>
-                <span class="read-time">{{ ceil(str_word_count($article->content) / 200) }} min read</span>
+                <span class="author">
+                    By {{ $article->author->name }}
+                </span>
+
+                <span class="date">
+                    {{ $article->published_at->format('M d, Y') }}
+                </span>
+
+                <span class="read-time">
+                    {{ ceil(
+                        str_word_count($article->content) / 200
+                    ) }} min read
+                </span>
             </div>
         </header>
 
         @if($article->featured_image)
-            <img src="{{ $article->featured_image }}" alt="{{ $article->title }}" class="featured-image">
+            <img
+                src="{{ $article->featured_image }}"
+                alt="{{ $article->title }}"
+                class="featured-image"
+            >
         @endif
 
         <div class="article-content">
@@ -300,7 +366,13 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 
 class User extends Authenticatable
 {
-    protected $fillable = ['name', 'email', 'avatar', 'bio', 'username'];
+    protected $fillable = [
+        'name',
+        'email',
+        'avatar',
+        'bio',
+        'username',
+    ];
 
     public function getSeoContext(): array
     {
@@ -332,16 +404,23 @@ class ProfileController extends Controller
 {
     public function show(string $username): View
     {
-        $user = User::where('username', $username)->firstOrFail();
+        $user = User::where('username', $username)
+            ->firstOrFail();
 
         $seo = app('seoinjector')
             ->setUrl(route('profile.show', $username))
             ->setContext($user->getSeoContext())
             ->setLanguage(app()->getLocale());
 
-        $articles = $user->articles()->published()->latest()->paginate(10);
+        $articles = $user->articles()
+            ->published()
+            ->latest()
+            ->paginate(10);
 
-        return view('profile.show', compact('user', 'seo', 'articles'));
+        return view(
+            'profile.show',
+            compact('user', 'seo', 'articles')
+        );
     }
 }
 ```
@@ -363,8 +442,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 class InjectSEO
 {
-    public function handle(Request $request, Closure $next): Response
-    {
+    public function handle(
+        Request $request,
+        Closure $next
+    ): Response {
         $response = $next($request);
 
         // Get SEO instance
@@ -388,6 +469,7 @@ Register in `app/Http/Kernel.php`:
 
 ```php
 <?php
+
 protected $routeMiddleware = [
     // ...
     'inject-seo' => \App\Http\Middleware\InjectSEO::class,
@@ -398,7 +480,11 @@ Use in routes:
 
 ```php
 <?php
-Route::get('/products/{slug}', [ProductController::class, 'show'])
+
+Route::get(
+    '/products/{slug}',
+    [ProductController::class, 'show']
+)
     ->middleware('inject-seo')
     ->name('products.show');
 ```
@@ -407,14 +493,20 @@ Then in your controller, just set the context:
 
 ```php
 <?php
+
 public function show(string $slug): View
 {
-    $product = Product::where('slug', $slug)->firstOrFail();
+    $product = Product::where('slug', $slug)
+        ->firstOrFail();
 
     // Context is set, middleware handles URL and language
-    app('seoinjector')->setContext($product->getSeoContext());
+    app('seoinjector')
+        ->setContext($product->getSeoContext());
 
-    return view('products.show', compact('product'));
+    return view(
+        'products.show',
+        compact('product')
+    );
 }
 ```
 
@@ -436,7 +528,8 @@ class ProductApiController extends Controller
 {
     public function show(string $slug): JsonResponse
     {
-        $product = Product::where('slug', $slug)->firstOrFail();
+        $product = Product::where('slug', $slug)
+            ->firstOrFail();
 
         $seo = app('seoinjector')
             ->setUrl(route('products.show', $slug))
@@ -447,7 +540,7 @@ class ProductApiController extends Controller
 
         return response()->json([
             'product' => $product,
-            'seo' => $metadata, // Include SEO data in API response
+            'seo' => $metadata,
         ]);
     }
 }
@@ -488,18 +581,25 @@ class ProductController extends Controller
     public function show(string $locale, string $slug)
     {
         // Validate locale
-        if (!in_array($locale, config('app.supported_locales'))) {
+        if (!in_array(
+            $locale,
+            config('app.supported_locales')
+        )) {
             abort(404);
         }
 
-        $product = Product::where('slug', $slug)->firstOrFail();
+        $product = Product::where('slug', $slug)
+            ->firstOrFail();
 
         $seo = app('seoinjector')
             ->setUrl("/{$locale}/products/{$slug}")
             ->setContext($product->getSeoContext())
-            ->setLanguage($locale); // Set language explicitly
+            ->setLanguage($locale);
 
-        return view('products.show', compact('product', 'seo'));
+        return view(
+            'products.show',
+            compact('product', 'seo')
+        );
     }
 }
 ```
@@ -508,7 +608,10 @@ Route:
 
 ```php
 Route::group(['prefix' => '{locale}'], function () {
-    Route::get('/products/{slug}', [ProductController::class, 'show'])
+    Route::get(
+        '/products/{slug}',
+        [ProductController::class, 'show']
+    )
         ->where('locale', 'en|fr|de|es')
         ->name('products.show');
 });
@@ -522,18 +625,28 @@ Route::group(['prefix' => '{locale}'], function () {
 <?php
 
 // Clear cache for a specific URL
-Route::post('/admin/cache/clear/{url}', function (Request $request) {
-    app('seoinjector')->clearCache($request->url);
+Route::post(
+    '/admin/cache/clear/{url}',
+    function (Request $request) {
+        app('seoinjector')->clearCache($request->url);
 
-    return response()->json(['message' => 'Cache cleared']);
-})->middleware('auth', 'admin');
+        return response()->json([
+            'message' => 'Cache cleared',
+        ]);
+    }
+)->middleware('auth', 'admin');
 
 // Clear all SEO cache
-Route::post('/admin/cache/clear-all', function () {
-    app('seoinjector')->clearAllCache();
+Route::post(
+    '/admin/cache/clear-all',
+    function () {
+        app('seoinjector')->clearAllCache();
 
-    return response()->json(['message' => 'All SEO cache cleared']);
-})->middleware('auth', 'admin');
+        return response()->json([
+            'message' => 'All SEO cache cleared',
+        ]);
+    }
+)->middleware('auth', 'admin');
 ```
 
 ---
@@ -557,12 +670,14 @@ class ProductSeoTest extends TestCase
             'slug' => 'iphone-16-pro',
         ]);
 
-        $response = $this->get(route('products.show', $product->slug));
+        $response = $this->get(
+            route('products.show', $product->slug)
+        );
 
         $response->assertSuccessful();
-        $response->assertSee('iPhone 16 Pro'); // Title should be in the page
-        $response->assertSee('og:image'); // OG tags should be rendered
-        $response->assertSee('og:price:amount'); // Price should be in OG tags
+        $response->assertSee('iPhone 16 Pro');
+        $response->assertSee('og:image');
+        $response->assertSee('og:price:amount');
     }
 }
 ```
@@ -573,12 +688,15 @@ class ProductSeoTest extends TestCase
 
 The Laravel integration provides:
 
-✅ Service provider for easy access via `app('seoinjector')`  
-✅ Config file for environment-based settings  
-✅ Model methods to encapsulate SEO context  
-✅ Controller examples for products, articles, and profiles  
-✅ Middleware for automatic URL/language injection  
-✅ Support for both traditional views and headless APIs  
-✅ Multi-language support with explicit language setting  
-✅ Cache management endpoints for admin panels  
-✅ Testable architecture with proper separation of concerns
+* Service provider for easy access via `app('seoinjector')`
+* Config file for environment-based settings
+* Model methods to encapsulate SEO context
+* Controller examples for products, articles, and profiles
+* Middleware for automatic URL/language injection
+* Support for both traditional views and headless APIs
+* Multi-language support with explicit language setting
+* Cache management endpoints for admin panels
+* Testable architecture with proper separation of concerns
+
+```
+```
