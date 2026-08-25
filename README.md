@@ -25,6 +25,7 @@ Universal PHP library for managing SEO metadata from a centralized dashboard. Wo
 SEO Injector now supports **context-aware dynamic SEO resolution**. Instead of managing individual SEO entries per product or article, you can define templates that automatically populate with your application's data.
 
 **Perfect for:**
+
 - E-commerce product pages
 - Blog articles with dynamic metadata
 - User profiles or portfolio pages
@@ -32,12 +33,12 @@ SEO Injector now supports **context-aware dynamic SEO resolution**. Instead of m
 
 ### Why Dynamic SEO?
 
-| Challenge | Solution |
-|-----------|----------|
-| Thousands of products, each needs unique SEO | Define one template, supply product context |
-| SEO metadata gets stale | Uses real-time product/article data |
+| Challenge                                         | Solution                                    |
+| ------------------------------------------------- | ------------------------------------------- |
+| Thousands of products, each needs unique SEO      | Define one template, supply product context |
+| SEO metadata gets stale                           | Uses real-time product/article data         |
 | Managing individual meta tags per page is tedious | Centralized templates + automatic rendering |
-| Social sharing needs different OG tags per item | Dynamic Open Graph generation from context |
+| Social sharing needs different OG tags per item   | Dynamic Open Graph generation from context  |
 
 ## 📦 Installation
 
@@ -117,12 +118,12 @@ echo $metadata['og_price_amount']; // "999"
 // In your controller
 Route::get('/products/{slug}', function($slug) {
     $product = Product::where('slug', $slug)->firstOrFail();
-    
+
     $seo = app('seoinjector')
         ->setUrl(request()->path())
         ->setContext(['product' => $product->toArray()])
         ->setLanguage(app()->getLocale());
-    
+
     return view('products.show', ['product' => $product, 'seo' => $seo]);
 });
 ```
@@ -142,11 +143,11 @@ add_action('wp_head', function() {
     // For single posts/pages
     if (is_singular()) {
         $post = get_queried_object();
-        
+
         $seo = new \SEOInjector\SEOInjector(
             get_option('seoinjector_api_key')
         );
-        
+
         $seo->setContext([
             'post' => [
                 'title' => $post->post_title,
@@ -154,7 +155,7 @@ add_action('wp_head', function() {
                 'image' => get_the_post_thumbnail_url($post),
             ]
         ]);
-        
+
         echo $seo->renderDynamic();
     }
 }, 1);
@@ -165,13 +166,17 @@ add_action('wp_head', function() {
 ### Core Methods
 
 #### `setUrl(string $url): self`
+
 Set the URL/path to fetch SEO metadata for.
+
 ```php
 $seo->setUrl('/products/iphone-16-pro');
 ```
 
 #### `setContext(array $context): self` (NEW!)
+
 Pass application data for dynamic template resolution.
+
 ```php
 $seo->setContext([
     'product' => ['name' => '...', 'price' => '...'],
@@ -180,45 +185,59 @@ $seo->setContext([
 ```
 
 #### `setLanguage(string $language): self`
+
 Explicitly set the language for metadata resolution (auto-detected from Accept-Language header if not set).
+
 ```php
 $seo->setLanguage('en'); // or 'fr', 'de', etc.
 ```
 
 #### `render(): string`
+
 Render static SEO metadata as HTML meta tags.
+
 ```php
 echo $seo->render();
 ```
 
 #### `renderDynamic(): string` (NEW!)
+
 Render context-aware dynamic SEO metadata as HTML.
+
 ```php
 echo $seo->setContext($data)->renderDynamic();
 ```
 
 #### `get(): ?array`
+
 Get static metadata as an associative array.
+
 ```php
 $metadata = $seo->get();
 echo $metadata['title'];
 ```
 
 #### `getDynamic(): ?array` (NEW!)
+
 Get dynamically resolved metadata as an associative array.
+
 ```php
 $metadata = $seo->setContext($data)->getDynamic();
 echo $metadata['og_image'];
 ```
 
 #### `clearCache(string $url): void`
+
 Clear cached metadata for a specific URL.
+
 ```php
 $seo->clearCache('/products/iphone-16-pro');
 ```
 
 #### `clearAllCache(): void`
+
 Clear all cached metadata.
+
 ```php
 $seo->clearAllCache();
 ```

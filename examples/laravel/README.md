@@ -3,6 +3,7 @@
 ## Installation & Setup
 
 ### Step 1: Install the Package
+
 ```bash
 composer require negusdev/seoinjector-php
 ```
@@ -60,6 +61,7 @@ class SEOInjectorServiceProvider extends ServiceProvider
 ```
 
 Add to `config/app.php` in the `providers` array:
+
 ```php
 <?php
 'providers' => [
@@ -71,6 +73,7 @@ Add to `config/app.php` in the `providers` array:
 ### Step 4: Add Environment Variables
 
 Add to `.env`:
+
 ```
 SEOINJECTOR_API_KEY=your_api_key_here
 SEOINJECTOR_CACHE=true
@@ -134,10 +137,10 @@ class ProductController extends Controller
     public function show(string $slug): View
     {
         $product = Product::where('slug', $slug)->firstOrFail();
-        
+
         // Get SEO Injector instance
         $seo = app('seoinjector');
-        
+
         // Configure dynamic SEO
         $seo
             ->setUrl(route('products.show', $slug))
@@ -160,18 +163,18 @@ class ProductController extends Controller
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     {{-- Render dynamic SEO metadata --}}
     {!! $seo->renderDynamic() !!}
 </head>
 <body>
     <div class="container">
         <h1>{{ $product->name }}</h1>
-        
+
         <div class="product-image">
             <img src="{{ $product->image }}" alt="{{ $product->name }}">
         </div>
-        
+
         <div class="product-details">
             <p class="price">${{ number_format($product->price, 2) }}</p>
             <p class="description">{{ $product->description }}</p>
@@ -237,7 +240,7 @@ class ArticleController extends Controller
     public function show(string $slug): View
     {
         $article = Article::where('slug', $slug)->published()->firstOrFail();
-        
+
         $seo = app('seoinjector')
             ->setUrl(route('articles.show', $slug))
             ->setContext($article->getSeoContext())
@@ -256,7 +259,7 @@ class ArticleController extends Controller
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    
+
     {!! $seo->renderDynamic() !!}
 </head>
 <body>
@@ -330,7 +333,7 @@ class ProfileController extends Controller
     public function show(string $username): View
     {
         $user = User::where('username', $username)->firstOrFail();
-        
+
         $seo = app('seoinjector')
             ->setUrl(route('profile.show', $username))
             ->setContext($user->getSeoContext())
@@ -366,10 +369,10 @@ class InjectSEO
 
         // Get SEO instance
         $seo = app('seoinjector');
-        
+
         // Auto-set URL from current route
         $seo->setUrl($request->getPathInfo());
-        
+
         // Set language from app locale
         $seo->setLanguage(app()->getLocale());
 
@@ -407,7 +410,7 @@ Then in your controller, just set the context:
 public function show(string $slug): View
 {
     $product = Product::where('slug', $slug)->firstOrFail();
-    
+
     // Context is set, middleware handles URL and language
     app('seoinjector')->setContext($product->getSeoContext());
 
@@ -434,7 +437,7 @@ class ProductApiController extends Controller
     public function show(string $slug): JsonResponse
     {
         $product = Product::where('slug', $slug)->firstOrFail();
-        
+
         $seo = app('seoinjector')
             ->setUrl(route('products.show', $slug))
             ->setContext($product->getSeoContext());
@@ -455,17 +458,17 @@ Frontend (Vue/React) can use this data:
 ```javascript
 // client.js
 async function loadProduct(slug) {
-    const response = await fetch(`/api/products/${slug}`);
-    const data = await response.json();
-    
-    // Set meta tags dynamically
-    document.title = data.seo.title;
-    
-    // Set Open Graph tags
-    setMetaTag('og:image', data.seo.og_image);
-    setMetaTag('og:description', data.seo.og_description);
-    
-    return data;
+  const response = await fetch(`/api/products/${slug}`);
+  const data = await response.json();
+
+  // Set meta tags dynamically
+  document.title = data.seo.title;
+
+  // Set Open Graph tags
+  setMetaTag("og:image", data.seo.og_image);
+  setMetaTag("og:description", data.seo.og_description);
+
+  return data;
 }
 ```
 
@@ -490,7 +493,7 @@ class ProductController extends Controller
         }
 
         $product = Product::where('slug', $slug)->firstOrFail();
-        
+
         $seo = app('seoinjector')
             ->setUrl("/{$locale}/products/{$slug}")
             ->setContext($product->getSeoContext())
@@ -502,6 +505,7 @@ class ProductController extends Controller
 ```
 
 Route:
+
 ```php
 Route::group(['prefix' => '{locale}'], function () {
     Route::get('/products/{slug}', [ProductController::class, 'show'])
@@ -520,14 +524,14 @@ Route::group(['prefix' => '{locale}'], function () {
 // Clear cache for a specific URL
 Route::post('/admin/cache/clear/{url}', function (Request $request) {
     app('seoinjector')->clearCache($request->url);
-    
+
     return response()->json(['message' => 'Cache cleared']);
 })->middleware('auth', 'admin');
 
 // Clear all SEO cache
 Route::post('/admin/cache/clear-all', function () {
     app('seoinjector')->clearAllCache();
-    
+
     return response()->json(['message' => 'All SEO cache cleared']);
 })->middleware('auth', 'admin');
 ```
